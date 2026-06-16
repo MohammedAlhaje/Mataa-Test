@@ -1,6 +1,10 @@
+using GameStore.Endpoints;
+
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
 
-app.MapGet("/", () => "Hello World!");
+app = app.MapGameStoreEndPoint();
 
 app.Run();
+
+
