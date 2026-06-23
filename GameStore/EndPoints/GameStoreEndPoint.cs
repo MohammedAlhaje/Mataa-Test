@@ -1,62 +1,56 @@
-using GameStore.Dtos;
+namespace GameStore.Endpoints;
 
-namespace GameStore.Endpoints
+using Dtos;
+using Repository;
+using GameStoreMapping;
+
+public static class GameStoreEndPoint
 {
-    public static class GameStoreEndPoint
+    public static RouteGroupBuilder MapGameStoreEndPoint(this WebApplication app)
     {
-        public static WebApplication MapGameStoreEndPoint(this WebApplication app)
+        string getGame = "GetGame";
+        var gamesroute = app.MapGroup("/games");
+
+
+        gamesroute.MapGet("", (IGameRepository context) => context.GetAll());
+
+        gamesroute.MapGet("/{id:int}", (int id, IGameRepository context) =>
         {
-            List<GameDto> games =
-            [
-                new(1, "Fifa26", "last varsion on fifa relesed", 205, new DateTime(2026, 1, 1)),
-                new(2, "Call of Duty", "last varsion on Call of Duty relesed", 205, new DateTime(2026, 1, 1)),
-                new(3, "PES2026", "last varsion on PES relesed", 205, new DateTime(2026, 1, 1))
-            ];
-
-
-            app.MapGet("/games", () => games);
-
-
-            app.MapGet("/games/{id:int}", (int id) =>
+            var game = context.GetById(id);
+            return game is not null ? Results.Ok(game) : Results.NotFound();
+        }).WithName(getGame);
+        gamesroute.MapGet("/{name}", (string name, IGameRepository context) =>
+        {
+            var game = context.GetByName(name);
+            return game is not null ? Results.Ok(game) : Results.NotFound();
+        });
+        gamesroute.MapPost("", (GameDto game, IGameRepository context) =>
+        {
+            if (context.GetById(game.Id) is not null)
             {
-                var game = games.FirstOrDefault(g => g.Id == id);
-                return game is not null ? Results.Ok(game) : Results.NotFound();
-            });
-            app.MapGet("/games/{name}", (string name) =>
-            {
-                var game = games.FirstOrDefault(g => g.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-                return game is not null ? Results.Ok(game) : Results.NotFound();
-            });
-            app.MapPost("/games", (GameDto game) =>
-            {
-                if (games.Any(g => g.Id == game.Id))
-                {
-                    game = game with { Id = games.Max(g => g.Id) + 1 };
-                }
+                game = game with { Id = context.GetMax(game.ToEntity())!.Id + 1 };
+            }
 
-                games.Add(game);
-                return Results.Created($"/games/{game.Id}", game);
-            });
-            app.MapPut("/games/{id}", (int id, GameDto updatedGame) =>
+            context.Add(game.ToEntity());
+        });
+        gamesroute.MapPut("/{id}", (int id, GameDto updatedGame, IGameRepository context) =>
+        {
+            context.Update(id, updatedGame);
+            return Results.Ok();
+        });
+        gamesroute.MapDelete("/{id}", (int id, IGameRepository context) =>
+        {
+            var index = context.GetById(id);
+            if (index == null)
             {
-                var index = games.FindIndex(g => g.Id == id);
-                if (index == -1) return Results.NotFound();
-                updatedGame = updatedGame with { Id = id };
-                games[index] = updatedGame;
-                return Results.Ok(updatedGame);
-            });
-            app.MapDelete("/games/{id}", (int id) =>
-            {
-                var index = games.FindIndex(g => g.Id == id);
-                if (index == -1)
-                {
-                    return Results.NotFound();
-                }
+                return Results.NotFound();
+            }
 
-                games.RemoveAt(index);
-                return Results.Ok();
-            });
-            return app;
-        }
+            context.Delete(index);
+            return Results.Ok();
+        });
+
+        return gamesroute;
     }
 }
+

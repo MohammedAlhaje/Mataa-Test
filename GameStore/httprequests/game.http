@@ -1,8 +1,10 @@
+GET http://localhost:5254/games
+###
 POST http://localhost:5254/games
 content-type : application/json
 
 {
-    "Id" : 5,
+    "Id" : 6,
     "Name" : "fifa27",
     "Description" : "new relese from EA",
     "Price" : "59.99",
@@ -10,8 +12,15 @@ content-type : application/json
 }
 
 ###
+Content-Type: application/json
 
-GET http://localhost:5254/games
+{
+    
+    "Name" : "PES26",
+    "Description" : "new relese from EA",
+    "Price" : "59.99",
+    "ReleaseDate" : "2026-09-01"
+}
 
 ###
 
